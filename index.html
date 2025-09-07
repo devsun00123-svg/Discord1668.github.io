@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucky Draw 8 ช่อง</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #0b0f1a url('https://i.ibb.co/Q3LcT7v0/ebf87a03711596d16b393d719b4ecac1.jpg') no-repeat center center;
+    background-size: cover;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    flex-direction: column;
+  }
+  .logo {
+    width: 200px;
+    margin-bottom: 10px;
+  }
+  .board {
+    display: grid;
+    grid-template-columns: repeat(3, 100px);
+    grid-template-rows: repeat(3, 100px);
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .cell {
+    background: #222;
+    border: 2px solid #555;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    transition: 0.2s;
+  }
+  .cell img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+  }
+  .cell.active {
+    background: #f6c84c;
+    transform: scale(1.1);
+  }
+  .center {
+    background: #000;
+    border: 2px solid #999;
+  }
+  .center img {
+    width: 80%;
+    height: 80%;
+    object-fit: contain;
+  }
+  .controls {
+    margin-top: 20px;
+    text-align: center;
+  }
+  .btn {
+    background: #c62828;
+    border: none;
+    padding: 12px 24px;
+    margin: 5px;
+    color: #fff;
+    font-size: 18px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .btn:hover {
+    background: #a32222;
+  }
+  .result {
+    margin-top: 15px;
+    text-align: center;
+    font-size: 18px;
+  }
+  .result img {
+    margin-top: 10px;
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    border: 2px solid #fff;
+    border-radius: 8px;
+  }
+  .name-input {
+    margin-bottom: 10px;
+  }
+  .name-input input {
+    padding: 8px 12px;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+  <!-- โลโก้บนเว็บ -->
+  <img src="https://i.ibb.co/FkJCb3FN/Photoroom-25680907-182211.png" alt="โลโก้เว็บ" class="logo">
+
+  <!-- ช่องใส่ชื่อผู้เล่น -->
+  <div class="name-input">
+    <label for="playerName">ชื่อผู้เล่น: </label>
+    <input type="text" id="playerName" placeholder="กรอกชื่อผู้เล่น">
+  </div>
+
+  <!-- ตารางสุ่ม -->
+  <div class="board">
+    <div class="cell" id="c0"><img src="https://i.ibb.co/qYfwzJqZ/30-20250907170216.png"></div>
+    <div class="cell" id="c1"><img src="https://i.ibb.co/1GfSBP07/30-20250906200045.png"></div>
+    <div class="cell" id="c2"><img src="https://i.ibb.co/1GfSBP07/30-20250906200045.png"></div>
+    <div class="cell" id="c7"><img src="https://i.ibb.co/1GfSBP07/30-20250906200045.png"></div>
+    <div class="cell center"><img src="https://i.ibb.co/FkJCb3FN/Photoroom-25680907-182211.png"></div>
+    <div class="cell" id="c3"><img src="https://i.ibb.co/1GfSBP07/30-20250906200045.png"></div>
+    <div class="cell" id="c6"><img src="https://i.ibb.co/1GfSBP07/30-20250906200045.png"></div>
+    <div class="cell" id="c5"><img src=" https://i.ibb.co/1GfSBP07/30-20250906200045.png  "></div>
+    <div class="cell" id="c4"><img src="https://i.ibb.co/qYfwzJqZ/30-20250907170216.png"></div>
+  </div>
+
+  <!-- ปุ่มสุ่ม -->
+  <div class="controls">
+    <button class="btn" onclick="spin(1)">สุ่ม x1</button>
+    <button class="btn" onclick="spin(5)">สุ่ม x5</button>
+  </div>
+
+  <!-- แสดงผลรางวัล -->
+  <div class="result" id="result"></div>
+
+  <!-- เพลงพื้นหลังและเสียงสุ่ม -->
+  <audio id="bgMusic" src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" autoplay loop></audio>
+  <audio id="spinSound" src="https://www.soundjay.com/button/beep-07.wav"></audio>
+
+<script>
+const order = [0,1,2,3,4,5,6,7];
+const weights = [5, 20, 30, 20, 5, 40, 40, 30];
+let spinning = false;
+
+const messages = [
+  "ได้ยศฟรีแคปแล้วแจ้งแอดมิน",
+  "เกลือ",
+  "เกลือ",
+  "เกลือ",
+  "ได้ยศฟรีแคปแล้วแจ้งแอดมิน",
+  "เกลือ",
+  "เกลือ",
+  "เกลือ"
+];
+
+const webhookURL = "https://discord.com/api/webhooks/1413144385331269864/82ukWuqb8RTwiH6NsLkEPUhMn9XAh-E6VLVH8dyujtztxwze1bMLd_UCNiiiydSMZ1_d";
+
+// ตรวจสอบมือถือ
+function isMobile() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
+// ดึงชื่อผู้เล่นจาก input หรือ LocalStorage
+function getPlayerName(){
+  const input = document.getElementById("playerName");
+  let name = input.value || localStorage.getItem("playerName") || "ผู้เล่นไม่ระบุ";
+  input.value = name;
+  localStorage.setItem("playerName", name);
+  return name;
+}
+
+function highlight(index){
+  document.querySelectorAll('.cell').forEach(c=>c.classList.remove('active'));
+  if(index !== null){
+    document.getElementById('c'+index).classList.add('active');
+  }
+}
+
+function weightedRandom(){
+  let total = weights.reduce((a,b)=>a+b,0);
+  let r = Math.random() * total;
+  let sum = 0;
+  for(let i=0;i<weights.length;i++){
+    sum += weights[i];
+    if(r < sum) return i;
+  }
+  return 0;
+}
+
+function sendToDiscord(index){
+  const name = getPlayerName();
+  const img = document.querySelector(`#c${index} img`).src;
+  const message = messages[index];
+  const data = {
+    content: `🎉 ผู้เล่น: ${name} ได้รางวัล: ${message}`,
+    embeds: [{ image: { url: img } }]
+  };
+  fetch(webhookURL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+}
+
+function showResult(index){
+  const img = document.querySelector(`#c${index} img`).src;
+  const message = messages[index];
+  document.getElementById("result").innerHTML = `${message} <br><img src="${img}">`;
+  alert(message);
+  sendToDiscord(index);
+}
+
+function spin(times){
+  if(!isMobile()){
+    alert("เกมนี้เล่นได้เฉพาะมือถือเท่านั้น!");
+    return;
+  }
+  if(spinning) return;
+  spinning = true;
+
+  const sound = document.getElementById('spinSound');
+  sound.currentTime = 0;
+  sound.play();
+
+  let count = 0;
+  function doSpin(){
+    let target = weightedRandom(); 
+    let steps = order.length*3 + target; 
+    let pos = 0;
+    let interval = setInterval(()=>{
+      highlight(order[pos % order.length]);
+      pos++;
+      if(pos>steps){
+        clearInterval(interval);
+        showResult(target);
+        sound.pause();
+        sound.currentTime = 0;
+        count++;
+        if(count<times){
+          setTimeout(doSpin, 600);
+        } else {
+          spinning=false;
+        }
+      }
+    },120);
+  }
+  doSpin();
+}
+</script>
+</body>
+</html>
